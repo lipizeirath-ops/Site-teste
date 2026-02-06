@@ -319,76 +319,49 @@
         }
 
         window.processarDeposito = async function() {
-            const valorInput = document.getElementById('deposito-valor');
-            const valor = parseFloat(valorInput.value);
-            const btn = document.getElementById('btn-gerar');
+    const valorInput = document.getElementById('deposito-valor');
+    const valor = parseFloat(valorInput.value);
+    const btn = document.getElementById('btn-gerar');
 
-            if (!uidUsuario) {
-                return Swal.fire({ icon: 'error', title: 'Erro', text: 'Usuário não identificado.', background: '#1a0505', color: '#fff' });
-            }
+    if (isNaN(valor) || valor < 50) {
+        return Swal.fire({ icon: 'error', title: 'Valor Inválido', text: 'Mínimo R$ 50,00', background: '#1a0505', color: '#fff' });
+    }
 
-            if (isNaN(valor) || valor < 50) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Valor Inválido',
-                    text: 'O depósito mínimo permitido é de R$ 50,00.',
-                    background: '#1a0505',
-                    color: '#fff',
-                    confirmButtonColor: '#2ecc71'
-                });
-                return;
-            }
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> PROCESSANDO...';
 
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> PROCESSANDO...';
+    try {
+        const response = await fetch(urlPipedream, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                amount: valor,
+                userId: uidUsuario,
+                userName: nomeUsuario,
+                type: 'deposito_pix'
+            })
+        });
 
-            try {
-                // AJUSTE DE ESTRUTURA PARA A DOCUMENTAÇÃO THRONEPAY
-                const response = await fetch(urlPipedream, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        amount: valor,
-                        external_id: "DEP_" + uidUsuario + "_" + Date.now(),
-                        payer: {
-                            name: nomeUsuario,
-                            email: emailUsuario,
-                            document: "00000000000"
-                        },
-                        userId: uidUsuario,
-                        type: 'deposito_pix'
-                    })
-                });
+        const data = await response.json();
 
-                const data = await response.json();
+        if (data.success) {
+            document.getElementById('deposito-screen').style.display = 'none';
+            document.getElementById('qr-container').style.display = 'block';
 
-                if (data.success) {
-                    document.getElementById('deposito-screen').style.display = 'none';
-                    document.getElementById('qr-container').style.display = 'block';
+            // ATUALIZADO: Nomes batendo com o Pipedream
+            pixGlobal = data.pix_code; 
+            document.getElementById('pix-copy-text').innerText = pixGlobal;
+            document.getElementById('qr-img').src = data.qr_image; // Aqui estava o erro!
 
-                    // AJUSTE DOS CAMPOS DE RETORNO
-                    pixGlobal = data.pix_code; 
-                    document.getElementById('pix-copy-text').innerText = pixGlobal;
-                    
-                    let qrCodeImage = data.pix_qr_code_base64;
-                    if (qrCodeImage && !qrCodeImage.startsWith('data:image')) {
-                        qrCodeImage = "data:image/png;base64," + qrCodeImage;
-                    }
-                    
-                    document.getElementById('qr-img').src = qrCodeImage;
-
-                    monitorarHistoricoDepot();
-                    
-                } else {
-                    Swal.fire({ icon: 'error', title: 'Erro', text: data.message || "Tente novamente.", background: '#1a0505', color: '#fff' });
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fas fa-bolt"></i> GERAR PIX AGORA';
-                }
-            } catch (error) {
-                Swal.fire({ icon: 'error', title: 'Erro de Conexão', text: 'Não foi possível conectar ao servidor.', background: '#1a0505', color: '#fff' });
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-bolt"></i> GERAR PIX AGORA';
-            }
+            monitorarHistoricoDepot();
+        } else {
+            throw new Error(data.error);
+        }
+    } catch (error) {
+        Swal.fire({ icon: 'error', title: 'Erro', text: 'Falha ao gerar PIX.', background: '#1a0505', color: '#fff' });
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-bolt"></i> GERAR PIX AGORA';
+    }
         }
 
         window.copiarPix = function() {
