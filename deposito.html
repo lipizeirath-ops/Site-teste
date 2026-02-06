@@ -323,7 +323,7 @@
     const valor = parseFloat(valorInput.value);
     const btn = document.getElementById('btn-gerar');
 
-    if (isNaN(valor) || valor < 50) {
+    if (isNaN(valor) || valor < 1) {
         return Swal.fire({ icon: 'error', title: 'Valor Inválido', text: 'Mínimo R$ 50,00', background: '#1a0505', color: '#fff' });
     }
 
