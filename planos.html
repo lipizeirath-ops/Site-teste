@@ -146,15 +146,15 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, updateDoc, collection, addDoc, Timestamp, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, updateDoc, collection, addDoc, Timestamp, increment, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDKDFw7khZzM9hIX7xbbrbFQeESiCLnmOw",
-    authDomain: "monety-site-9175f.firebaseapp.com",
-    projectId: "monety-site-9175f",
-    storageBucket: "monety-site-9175f.firebasestorage.app",
-    messagingSenderId: "840821848803",
-    appId: "1:840821848803:web:b99a5528e4bb925518a3d6"
+            authDomain: "monety-site-9175f.firebaseapp.com",
+            projectId: "monety-site-9175f",
+            storageBucket: "monety-site-9175f.firebasestorage.app",
+            messagingSenderId: "840821848803",
+            appId: "1:840821848803:web:b99a5528e4bb925518a3d6"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -183,6 +183,7 @@
             if (user) {
                 uidUsuario = user.uid;
                 await carregarDados();
+                await verificarRendimentos(); // Verifica se tem lucro pra pagar hoje
                 gerarPlanos();
             } else { window.location.href = "login.html"; }
         });
@@ -195,6 +196,65 @@
                     document.getElementById('user-balance').innerText = `R$ ${saldoAtual.toFixed(2).replace('.', ',')}`;
                 }
             } catch (e) { console.error(e); }
+        }
+
+        // --- FUNÇÃO NOVA: PAGA O RENDIMENTO DIÁRIO ---
+        async function verificarRendimentos() {
+            try {
+                const q = query(collection(db, "investimentos"), 
+                    where("userId", "==", uidUsuario),
+                    where("status", "==", "ativo")
+                );
+                
+                const snapshot = await getDocs(q);
+                const agora = new Date();
+
+                snapshot.forEach(async (docInv) => {
+                    const dadosInv = docInv.data();
+                    const ultimoPag = dadosInv.ultimoPagamento.toDate();
+                    const dataExp = dadosInv.dataExpiracao.toDate();
+
+                    // Se já passou da data de expiração, finaliza o plano
+                    if (agora > dataExp) {
+                        await updateDoc(doc(db, "investimentos", docInv.id), { status: "finalizado" });
+                        return;
+                    }
+
+                    // Calcula diferença de tempo em milissegundos
+                    const diffTime = Math.abs(agora - ultimoPag);
+                    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)); // Converte para dias inteiros
+
+                    // Se passou pelo menos 1 dia (24h)
+                    if (diffDays >= 1) {
+                        const valorPagar = dadosInv.rendimentoDiario * diffDays;
+
+                        // 1. Atualiza o saldo do usuário (Saldo Lucro e Saldo Total se quiser, aqui vai no saldo geral)
+                        // NOTA: Geralmente separa-se saldo de depósito e saldo de lucro. Aqui estou somando no saldo geral.
+                        await updateDoc(doc(db, "usuarios", uidUsuario), {
+                            saldoLucro: increment(valorPagar) // Supondo que você use 'saldoLucro' para saques
+                        });
+
+                        // 2. Atualiza o investimento (novo último pagamento)
+                        await updateDoc(doc(db, "investimentos", docInv.id), {
+                            ultimoPagamento: Timestamp.now()
+                        });
+
+                        // 3. Registra no histórico
+                        await addDoc(collection(db, "historico"), {
+                            userId: uidUsuario,
+                            valor: valorPagar,
+                            tipo: "Rendimento",
+                            descricao: `Rendimento ${diffDays} dia(s) - Plano ${dadosInv.plano}`,
+                            data: Timestamp.now()
+                        });
+                        
+                        // Opcional: Mostra um toast ou notificação discreta
+                        console.log(`Pago: R$ ${valorPagar} referente a ${diffDays} dias.`);
+                    }
+                });
+            } catch (error) {
+                console.error("Erro ao verificar rendimentos:", error);
+            }
         }
 
         function gerarPlanos() {
@@ -240,7 +300,7 @@
                 if (dados.jaGerouBonus === true) return;
 
                 const rede = [
-                    { id: dados.indicadoPor, pct: 0.10 },     
+                    { id: dados.indicadoPor, pct: 0.10 },      
                     { id: dados.indicadoPorAvo, pct: 0.05 },  
                     { id: dados.indicadoPorBisavo, pct: 0.02 } 
                 ];
@@ -336,8 +396,7 @@
                         saldo: increment(-valor) 
                     });
 
-                    // 3. SALVA NO HISTÓRICO (APENAS ESTE, SEM DUPLICIDADE)
-                    // Valor negativo para aparecer vermelho, e Tipo correto.
+                    // 3. SALVA NO HISTÓRICO
                     await addDoc(collection(db, "historico"), {
                         userId: uidUsuario,
                         valor: -valor, 
@@ -346,7 +405,7 @@
                         data: Timestamp.now()
                     });
 
-                    // 4. CHAMA O BÔNUS DE REDE (Se houver)
+                    // 4. CHAMA O BÔNUS DE REDE
                     await processarComissoesRede(valor);
 
                     Swal.fire({ 
