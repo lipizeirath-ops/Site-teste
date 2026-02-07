@@ -1,4 +1,4 @@
-!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
@@ -90,6 +90,7 @@
         .status-ativo { background: rgba(46, 204, 113, 0.2); color: var(--green); }
         .status-bloqueado { background: rgba(231, 76, 60, 0.2); color: var(--red); }
 
+        /* Oculto por padrão para segurança visual */
         #admin-panel { display: none; }
         #access-denied { display: none; text-align: center; margin-top: 100px; }
     </style>
@@ -200,11 +201,11 @@
 
         const firebaseConfig = {
             apiKey: "AIzaSyDKDFw7khZzM9hIX7xbbrbFQeESiCLnmOw",
-    authDomain: "monety-site-9175f.firebaseapp.com",
-    projectId: "monety-site-9175f",
-    storageBucket: "monety-site-9175f.firebasestorage.app",
-    messagingSenderId: "840821848803",
-    appId: "1:840821848803:web:b99a5528e4bb925518a3d6"
+            authDomain: "monety-site-9175f.firebaseapp.com",
+            projectId: "monety-site-9175f",
+            storageBucket: "monety-site-9175f.firebasestorage.app",
+            messagingSenderId: "840821848803",
+            appId: "1:840821848803:web:b99a5528e4bb925518a3d6"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -212,7 +213,10 @@
         const db = getFirestore(app);
 
         const ADMIN_EMAIL = "lipedosantos2008@gmail.com";
-        const URL_MAKE_PAYOUT = "https://hook.us2.make.com/1i8cv3gfh95c5oyhw8h3yanjxgqchq7r"; 
+        
+        // --- COLOQUE ABAIXO SUA URL DO PIPEDREAM ---
+        // Exemplo: https://eo123456.m.pipedream.net
+        const URL_PIPEDREAM_PAYOUT = "https://eottot41sx25yyz.m.pipedream.net/"; 
         
         let userEncontradoId = null;
         let userStatusAtual = "ativo";
@@ -221,19 +225,29 @@
             toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, background: '#1a1a1a', color: '#fff'
         });
 
-        // CORREÇÃO DA VERIFICAÇÃO DE LOGIN
+        // --- LÓGICA DE SEGURANÇA REFORÇADA ---
         onAuthStateChanged(auth, async (user) => {
+            const loading = document.getElementById('loading');
+            const adminPanel = document.getElementById('admin-panel');
+            const deniedDiv = document.getElementById('access-denied');
+
             if (user) {
-                console.log("Logado como:", user.email);
+                // Verifica se é o admin exato (ignorando maiúsculas/minúsculas)
                 if (user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
-                    document.getElementById('loading').style.display = 'none';
-                    document.getElementById('admin-panel').style.display = 'block';
+                    // É admin: Mostra o painel e carrega os dados
+                    loading.style.display = 'none';
+                    deniedDiv.style.display = 'none';
+                    adminPanel.style.display = 'block'; 
+                    
                     carregarDadosIniciais();
                 } else {
-                    document.getElementById('loading').style.display = 'none';
-                    document.getElementById('access-denied').style.display = 'block';
+                    // NÃO é admin: DESTRÓI o painel do HTML para segurança total
+                    loading.style.display = 'none';
+                    if(adminPanel) adminPanel.remove(); // Remove fisicamente da página
+                    deniedDiv.style.display = 'block';
                 }
             } else {
+                // Não logado
                 window.location.href = "login.html";
             }
         });
@@ -378,7 +392,7 @@
                         <td>${s.data || '---'}</td>
                         <td><small>${s.chavePix || 'Não informada'}</small></td>
                         <td style="color:var(--green); font-weight:bold;">R$ ${parseFloat(s.valorReceber || 0).toFixed(2)}</td>
-                        <td><button class="btn btn-add" style="padding:6px; font-size:11px;" id="btn-pay-${id}">PAGAR AGORA</button></td>
+                        <td><button class="btn btn-add" style="padding:6px; font-size:11px;" id="btn-pay-${id}">PAGAR VIA PIPEDREAM</button></td>
                     `;
                     lista.appendChild(tr);
 
@@ -391,7 +405,8 @@
                         btn.innerHTML = "<i class='fas fa-spinner fa-spin'></i>";
 
                         try {
-                            const response = await fetch(URL_MAKE_PAYOUT, {
+                            // --- ALTERADO PARA USAR O PIPEDREAM ---
+                            const response = await fetch(URL_PIPEDREAM_PAYOUT, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({
@@ -404,15 +419,15 @@
 
                             if (response.ok) {
                                 await updateDoc(doc(db, "saques", id), { status: "concluido", dataPagamento: new Date() });
-                                Swal.fire('Sucesso!', 'Pagamento processado.', 'success');
+                                Swal.fire('Sucesso!', 'Enviado ao Pipedream com sucesso.', 'success');
                                 carregarDadosIniciais();
                             } else {
                                 throw new Error();
                             }
                         } catch (error) {
-                            Swal.fire('Erro', 'Falha ao enviar para o Make.', 'error');
+                            Swal.fire('Erro', 'Falha ao conectar com o Pipedream.', 'error');
                             btn.disabled = false;
-                            btn.innerText = "PAGAR AGORA";
+                            btn.innerText = "PAGAR VIA PIPEDREAM";
                         }
                     };
                 });
