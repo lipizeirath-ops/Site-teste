@@ -164,172 +164,6 @@
                         <span id="res-status-badge" class="status-badge">ATIVO</span>
                         <p style="margin-top: 15px;">Saldo Atual: <span id="res-saldo" style="color: var(--gold); font-weight: bold; font-size: 1.2rem;">R$ 0,00</span></p>
                     </div>
-        <!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Controle - Restrito</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-    <style>
-        :root {
-            --bg: #0f0505;
-            --card: #1a1a1a;
-            --red: #e74c3c;
-            --green: #2ecc71;
-            --gold: #FFD700;
-            --border: rgba(255, 255, 255, 0.1);
-        }
-
-        * { 
-            margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; 
-            outline: none !important; -webkit-tap-highlight-color: transparent;
-        }
-
-        body { background: var(--bg); color: white; padding: 20px; min-height: 100vh; }
-        .container { max-width: 1000px; margin: 0 auto; }
-        
-        .admin-header { 
-            display: flex; justify-content: space-between; align-items: center; 
-            margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid var(--border);
-        }
-        
-        h1 { font-size: 1.5rem; color: var(--red); }
-
-        .stats-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px; margin-bottom: 30px;
-        }
-
-        .stat-card {
-            background: var(--card); padding: 20px; border-radius: 15px;
-            border: 1px solid var(--border); text-align: center;
-        }
-        .stat-card i { font-size: 1.5rem; color: var(--red); margin-bottom: 10px; }
-        .stat-card h2 { font-size: 1.4rem; margin-bottom: 5px; }
-        .stat-card p { font-size: 0.75rem; color: #888; text-transform: uppercase; font-weight: bold; }
-
-        .admin-section {
-            background: var(--card); border-radius: 15px; border: 1px solid var(--border);
-            padding: 20px; margin-bottom: 30px;
-        }
-
-        .section-title {
-            font-size: 1rem; color: var(--gold); margin-bottom: 20px;
-            display: flex; align-items: center; gap: 10px;
-        }
-
-        .search-group, .notice-group { display: flex; gap: 10px; margin-bottom: 20px; }
-
-        input, textarea {
-            flex: 1; padding: 12px 15px; background: #000; border: 1px solid var(--border);
-            border-radius: 10px; color: white; transition: 0.3s;
-        }
-        input:focus, textarea:focus { border-color: var(--red); box-shadow: 0 0 10px rgba(231, 76, 60, 0.2); }
-
-        .btn {
-            padding: 12px 20px; border: none; border-radius: 10px; font-weight: bold;
-            cursor: pointer; transition: 0.3s; display: inline-flex; align-items: center; gap: 8px;
-        }
-        .btn-search { background: var(--red); color: white; }
-        .btn-add { background: var(--green); color: white; }
-        .btn-ban { background: #555; color: white; }
-        .btn-ban.active { background: var(--red); }
-        
-        .btn:active { transform: scale(0.96); }
-        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
-
-        #user-result {
-            background: rgba(255,255,255,0.03); padding: 15px; border-radius: 10px;
-            display: none; margin-top: 15px; border: 1px solid rgba(255,255,255,0.05);
-        }
-
-        table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; padding: 15px; font-size: 0.75rem; color: #555; text-transform: uppercase; }
-        td { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.85rem; }
-
-        .status-badge { padding: 4px 8px; border-radius: 5px; font-size: 0.7rem; font-weight: bold; }
-        .status-ativo { background: rgba(46, 204, 113, 0.2); color: var(--green); }
-        .status-bloqueado { background: rgba(231, 76, 60, 0.2); color: var(--red); }
-
-        /* Oculto por padrão para segurança visual */
-        #admin-panel { display: none; }
-        #access-denied { display: none; text-align: center; margin-top: 100px; }
-    </style>
-</head>
-<body>
-
-    <div id="loading" style="text-align: center; margin-top: 100px;">
-        <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: var(--red);"></i>
-        <p style="margin-top:15px;">Validando credenciais Master...</p>
-    </div>
-
-    <div id="access-denied">
-        <i class="fas fa-user-lock" style="font-size: 3rem; color: var(--red); margin-bottom: 20px;"></i>
-        <h1>Acesso Negado</h1>
-        <p>Apenas o administrador master pode acessar esta área.</p><br>
-        <a href="index.html" style="color: var(--red); text-decoration: none; font-weight: bold;">Voltar para o Início</a>
-    </div>
-
-    <div id="admin-panel" class="container">
-        <div class="admin-header">
-            <h1><i class="fas fa-user-shield"></i> Painel Master ByteWay</h1>
-            <span style="font-size: 0.8rem; color: var(--green); font-weight: bold;"><i class="fas fa-circle"></i> Sistema Online</span>
-        </div>
-
-        <div class="admin-section">
-            <div class="section-title"><i class="fas fa-bullhorn"></i> Mural de Avisos Global</div>
-            <div class="notice-group">
-                <textarea id="input-aviso" placeholder="Digite uma mensagem para todos os usuários..."></textarea>
-                <button class="btn btn-search" id="btn-publicar-aviso">PUBLICAR MENSAGEM</button>
-            </div>
-        </div>
-
-        <div class="admin-section">
-            <div class="section-title"><i class="fas fa-gift"></i> Configurar Bônus de Novo Cadastro</div>
-            <div class="notice-group">
-                <input type="number" id="input-bonus-valor" placeholder="Valor em R$ (Ex: 10.00)" step="0.01">
-                <button class="btn btn-add" id="btn-salvar-bonus">DEFINIR BÔNUS</button>
-            </div>
-        </div>
-
-        <div class="stats-grid">
-            <div class="stat-card">
-                <i class="fas fa-vault"></i>
-                <h2 id="stat-saldo-total">R$ 0,00</h2>
-                <p>Total em Contas</p>
-            </div>
-            <div class="stat-card">
-                <i class="fas fa-hand-holding-dollar"></i>
-                <h2 id="stat-saques-pendentes">R$ 0,00</h2>
-                <p>Saques para Pagar</p>
-            </div>
-            <div class="stat-card">
-                <i class="fas fa-users"></i>
-                <h2 id="stat-total-usuarios">0</h2>
-                <p>Total Clientes</p>
-            </div>
-        </div>
-
-        <div class="admin-section">
-            <div class="section-title"><i class="fas fa-user-edit"></i> Buscar e Editar Usuário</div>
-            <div class="search-group">
-                <input type="email" id="search-email" placeholder="E-mail exato do usuário...">
-                <button class="btn btn-search" id="btn-search-user">LOCALIZAR</button>
-            </div>
-
-            <div id="user-result">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 20px;">
-                    <div>
-                        <p id="res-nome" style="font-weight: bold; font-size: 1.1rem;"></p>
-                        <p id="res-email" style="color: #888; font-size: 0.8rem; margin-bottom: 10px;"></p>
-                        <span id="res-status-badge" class="status-badge">ATIVO</span>
-                        <p style="margin-top: 15px;">Saldo Atual: <span id="res-saldo" style="color: var(--gold); font-weight: bold; font-size: 1.2rem;">R$ 0,00</span></p>
-                    </div>
                     <div style="text-align: right; min-width: 220px;">
                         <input type="number" id="input-new-amount" placeholder="Valor R$" style="width: 100%; margin-bottom: 10px;">
                         <button class="btn btn-add" id="btn-update-balance" style="width: 100%; justify-content: center; margin-bottom: 10px;">ATUALIZAR SALDO</button>
@@ -380,7 +214,8 @@
 
         const ADMIN_EMAIL = "lipedosantos2008@gmail.com";
         
-        // --- SUA URL DO PIPEDREAM CONFIGURADA ---
+        // --- COLOQUE ABAIXO SUA URL DO PIPEDREAM ---
+        // Exemplo: https://eo123456.m.pipedream.net
         const URL_PIPEDREAM_PAYOUT = "https://eottot41sx25yyz.m.pipedream.net/"; 
         
         let userEncontradoId = null;
@@ -412,8 +247,8 @@
                     deniedDiv.style.display = 'block';
                 }
             } else {
-                // Não logado - Redireciona para index.html (CORRIGIDO)
-                window.location.href = "index.html";
+                // Não logado
+                window.location.href = "login.html";
             }
         });
 
@@ -570,6 +405,7 @@
                         btn.innerHTML = "<i class='fas fa-spinner fa-spin'></i>";
 
                         try {
+                            // --- ALTERADO PARA USAR O PIPEDREAM ---
                             const response = await fetch(URL_PIPEDREAM_PAYOUT, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
