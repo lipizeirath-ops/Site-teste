@@ -397,18 +397,31 @@
                     lista.appendChild(tr);
 
                     document.getElementById(`btn-pay-${id}`).onclick = async () => {
-                        const confirm = await Swal.fire({ title: 'Confirmar Pagamento?', text: `Enviar R$ ${parseFloat(s.valorReceber).toFixed(2)} para ${s.chavePix}?`, icon: 'warning', showCancelButton: true, background: '#1a1a1a', color: '#fff' });
+                        const confirm = await Swal.fire({ 
+                            title: 'Confirmar Pagamento?', 
+                            text: `Enviar R$ ${parseFloat(s.valorReceber).toFixed(2)} para ${s.chavePix}?`, 
+                            icon: 'warning', 
+                            showCancelButton: true, 
+                            background: '#1a1a1a', 
+                            color: '#fff' 
+                        });
+                        
                         if (!confirm.isConfirmed) return;
 
                         const btn = document.getElementById(`btn-pay-${id}`);
+                        const textoOriginal = btn.innerHTML;
                         btn.disabled = true;
                         btn.innerHTML = "<i class='fas fa-spinner fa-spin'></i>";
 
                         try {
-                            // --- ALTERADO PARA USAR O PIPEDREAM ---
+                            console.log("Iniciando requisição para:", URL_PIPEDREAM_PAYOUT);
+                            
                             const response = await fetch(URL_PIPEDREAM_PAYOUT, {
                                 method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
+                                headers: { 
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json' 
+                                },
                                 body: JSON.stringify({
                                     amount: parseFloat(s.valorReceber),
                                     pixKey: s.chavePix,
@@ -419,20 +432,38 @@
 
                             if (response.ok) {
                                 await updateDoc(doc(db, "saques", id), { status: "concluido", dataPagamento: new Date() });
-                                Swal.fire('Sucesso!', 'Enviado ao Pipedream com sucesso.', 'success');
+                                Swal.fire('Sucesso!', 'Enviado ao Pipedream e Baixa Efetuada.', 'success');
                                 carregarDadosIniciais();
                             } else {
-                                throw new Error();
+                                // Se o Pipedream responder com erro 400 ou 500
+                                const text = await response.text();
+                                throw new Error(`Status ${response.status}: ${text}`);
                             }
                         } catch (error) {
-                            Swal.fire('Erro', 'Falha ao conectar com o Pipedream.', 'error');
+                            console.error("DETALHES DO ERRO:", error);
+                            
+                            let msgErro = "Falha ao conectar com o Pipedream.";
+                            
+                            if (error.message.includes("Failed to fetch")) {
+                                msgErro = "Erro de CORS ou Conexão. Verifique se o workflow do Pipedream está ATIVO e se retorna HTTP Response.";
+                            } else {
+                                msgErro = error.message;
+                            }
+
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Erro no Pagamento',
+                                text: msgErro,
+                                footer: 'Abra o Console (F12) para ver detalhes técnicos.'
+                            });
+                            
                             btn.disabled = false;
-                            btn.innerText = "PAGAR VIA PIPEDREAM";
+                            btn.innerHTML = textoOriginal;
                         }
                     };
                 });
             } catch (error) {
-                console.error("Erro saques:", error);
+                console.error("Erro geral saques:", error);
             }
         }
     </script>
